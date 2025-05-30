@@ -20,9 +20,11 @@
       text-decoration: none;
       margin-left: 1rem;
     }
+
     .nav-link:hover {
       text-decoration: underline;
     }
+
     nav {
       display: flex;
       align-items: center;
@@ -58,6 +60,7 @@
   <script src="app.js" defer></script>
   <script src="update-handler.js" defer></script>
   <script src="share-handler.js" defer></script>
+  <script src="js/store-handler.js" type="module" defer></script>
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener('load', () => {
