@@ -10,7 +10,6 @@ const STORE_ITEMS = {
 // Initialize the store when the page loads
 document.addEventListener('DOMContentLoaded', async () => {
   try {
-    console.log('por inicializar store');
     await digitalGoodsService.initialize();
     console.log('Store initialized successfully');
 

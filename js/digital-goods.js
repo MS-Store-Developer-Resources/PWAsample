@@ -10,17 +10,31 @@ class DigitalGoodsService {
 
     try {
       // Check if the Digital Goods API is available
-      if (!window.getDigitalGoodsService) {
+      console.log(navigator.userAgent);
+      if ('getDigitalGoodsService' in window) {
+        // The Digital Goods API is supported.
+        console.log('Digital Goods API is supported');
+      } else {
+        console.log('DigitalGoodsService is not available.');
+        // Use another payment method.
+      }
+      if (
+        window.getDigitalGoodsService === undefined ||
+        digitalGoodsService === null
+      ) {
         throw new Error('Digital Goods API is not supported in this browser');
       }
       debugger;
       // Get the service for Microsoft Store
+      // This payment method getDigitalGoodsService("https://store.microsoft.com/billing") is available only for a PWA that's installed from the Microsoft Store, on Windows. No other settings are needed.
       this.service = await window.getDigitalGoodsService(
         'https://store.microsoft.com/billing'
       );
       this.initialized = true;
       console.log('Digital Goods Service initialized successfully');
     } catch (error) {
+      // Our preferred service provider is not available.
+      // Use a normal web-based payment flow.
       console.error('Failed to initialize Digital Goods Service:', error);
       throw error;
     }
