@@ -104,10 +104,4 @@ async function checkPurchases() {
 }
 
 // Export functions and constants for use in other modules
-export {
-  initializeStore,
-  getStoreItems,
-  purchaseItem,
-  checkPurchases,
-  STORE_ITEMS,
-};
+export { initializeStore, getStoreItems, checkPurchases, validateResponse };
