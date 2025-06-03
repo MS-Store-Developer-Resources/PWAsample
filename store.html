@@ -243,11 +243,16 @@
         // Load store-related scripts only when needed
         async function setupStore() {
             try {
-                // Import store handler
-                const { initializeStore, purchaseItem, checkPurchases, STORE_ITEMS } = await import('./js/store-handler.js');
-                
-                // Initialize store and get item details
-                const itemDetails = await initializeStore();
+                const {
+                    initializeStore,
+                    getStoreItems,
+                    purchaseItem,
+                    checkPurchases
+                } = await import('./js/store-handler.js');
+
+                await initializeStore();
+
+                const itemDetails = await getStoreItems();
 
                 // Create store content
                 const storeContent = document.getElementById('store-content');
@@ -260,11 +265,11 @@
                         style: 'currency',
                         currency: item.price.currency,
                     }).format(item.price.value);
-                    
+
                     const itemElement = document.createElement('div');
                     itemElement.className = 'store-item';
                     itemElement.dataset.itemId = item.itemId;
-                    
+
                     itemElement.innerHTML = `
                         <h2>
                             ${item.title}
@@ -289,12 +294,11 @@
                             try {
                                 button.disabled = true;
                                 button.textContent = 'Processing...';
-                                
+
                                 const response = await purchaseItem(item.dataset.itemId);
-                                
-                                // Show success message
+
                                 showMessage('Purchase successful! Your premium features are now available.', 'success');
-                                
+
                                 // Update UI
                                 item.classList.add('purchased');
                                 const badge = item.querySelector('.purchased-badge');
@@ -304,7 +308,7 @@
                             } catch (error) {
                                 // Show error message
                                 showMessage('Purchase failed. Please try again later.', 'error');
-                                
+
                                 // Reset button state
                                 button.disabled = false;
                                 button.textContent = 'Purchase';
@@ -345,9 +349,9 @@
             const message = document.createElement('div');
             message.className = `message ${type}`;
             message.textContent = text;
-            
+
             container.appendChild(message);
-            
+
             // Remove message after 5 seconds
             setTimeout(() => {
                 message.style.animation = 'fadeOut 0.3s ease-out';

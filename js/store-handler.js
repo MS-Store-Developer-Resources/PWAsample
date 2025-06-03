@@ -6,17 +6,27 @@ const STORE_ITEMS = {
   REMOVE_ADS: 'remove_ads',
 };
 
-// Initialize the store
+// Initialize the digital goods service
 async function initializeStore() {
   try {
     await digitalGoodsService.initialize();
+    console.log('Store initialized successfully');
+  } catch (error) {
+    console.error('Failed to initialize store:', error);
+    throw error;
+  }
+}
+
+// Get details for all available items
+async function getStoreItems() {
+  try {
     const itemDetails = await digitalGoodsService.getDetails([
       STORE_ITEMS.PREMIUM_FEATURES,
       STORE_ITEMS.REMOVE_ADS,
     ]);
     return itemDetails;
   } catch (error) {
-    console.error('Failed to initialize store:', error);
+    console.error('Failed to get store items:', error);
     throw error;
   }
 }
@@ -30,7 +40,7 @@ async function purchaseItem(itemId) {
     if (!itemDetails) {
       throw new Error('Item not found');
     }
-
+    
     // Here you would typically show a purchase UI
     // For Microsoft Store, this would open the store purchase flow
     console.log('Initiating purchase for:', itemDetails);
@@ -62,4 +72,10 @@ async function checkPurchases() {
 }
 
 // Export functions and constants for use in other modules
-export { initializeStore, purchaseItem, checkPurchases, STORE_ITEMS };
+export { 
+  initializeStore, 
+  getStoreItems, 
+  purchaseItem, 
+  checkPurchases, 
+  STORE_ITEMS 
+};
