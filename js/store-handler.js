@@ -40,16 +40,15 @@ async function purchaseItem(itemId) {
     if (!itemDetails) {
       throw new Error('Item not found');
     }
-    
+
     // Here you would typically show a purchase UI
     // For Microsoft Store, this would open the store purchase flow
     console.log('Initiating purchase for:', itemDetails);
-    const item = itemDetails[0];
 
     const request = new PaymentRequest([
       {
         supportedMethods: 'https://store.microsoft.com/billing',
-        data: { sku: item.itemId },
+        data: { sku: itemDetails.itemId },
       },
     ]);
 
@@ -72,10 +71,10 @@ async function checkPurchases() {
 }
 
 // Export functions and constants for use in other modules
-export { 
-  initializeStore, 
-  getStoreItems, 
-  purchaseItem, 
-  checkPurchases, 
-  STORE_ITEMS 
+export {
+  initializeStore,
+  getStoreItems,
+  purchaseItem,
+  checkPurchases,
+  STORE_ITEMS,
 };
