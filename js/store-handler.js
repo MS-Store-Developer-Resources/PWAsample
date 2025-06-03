@@ -2,7 +2,7 @@ import digitalGoodsService from './digital-goods.js';
 
 // Example Microsoft Store item IDs
 const STORE_ITEMS = {
-  PREMIUM_FEATURES: 'premium_features',
+  PREMIUM_FEATURES: 'super_acceso_vip',
   REMOVE_ADS: 'remove_ads',
   // Add more items as needed
 };
