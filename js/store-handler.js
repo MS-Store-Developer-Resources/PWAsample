@@ -31,6 +31,16 @@ async function getStoreItems() {
   }
 }
 
+async function getItemDetails(item) {
+  try {
+    const itemDetails = await digitalGoodsService.getDetails(item);
+    return itemDetails;
+  } catch (error) {
+    console.error('Failed to get store item:', error);
+    throw error;
+  }
+}
+
 async function validateResponse(response) {
   try {
     if (await checkAllValues(response)) {
@@ -94,9 +104,9 @@ async function checkAllValues(response) {
 }
 
 // Function to check existing purchases
-async function checkPurchases(itemId) {
+async function checkPurchases() {
   try {
-    return await digitalGoodsService.listPurchases(itemId);
+    return await digitalGoodsService.listPurchases();
   } catch (error) {
     console.error('Failed to check purchases:', error);
     throw error;
@@ -104,4 +114,10 @@ async function checkPurchases(itemId) {
 }
 
 // Export functions and constants for use in other modules
-export { initializeStore, getStoreItems, checkPurchases, validateResponse };
+export {
+  initializeStore,
+  getStoreItems,
+  checkPurchases,
+  validateResponse,
+  getItemDetails,
+};

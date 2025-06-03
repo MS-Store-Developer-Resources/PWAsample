@@ -247,7 +247,8 @@
                     initializeStore,
                     getStoreItems,
                     validateResponse,
-                    checkPurchases
+                    checkPurchases,
+                    getItemDetails
                 } = await import('./js/store-handler.js');
 
                 await initializeStore();
@@ -304,7 +305,7 @@
                                 button.textContent = 'Processing...';
 
                                 // Get item details first
-                                const [itemDetails] = await checkPurchases([itemId]);
+                                const [itemDetails] = await getItemDetails([itemId]);
 
                                 if (!itemDetails) {
                                     throw new Error('Item not found');
