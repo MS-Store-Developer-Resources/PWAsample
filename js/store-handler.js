@@ -31,32 +31,65 @@ async function getStoreItems() {
   }
 }
 
-// Function to handle purchasing an item
-async function purchaseItem(itemId) {
+async function validateResponse(response) {
   try {
-    // Get item details first
-    const [itemDetails] = await digitalGoodsService.getDetails([itemId]);
+    if (await checkAllValues(response)) {
+      console.log('Payment validation successful');
+      await response.complete('success');
+    } else {
+      console.log('Payment validation failed');
+      await response.complete('fail');
+      throw new Error('Payment validation failed');
+    }
+  } catch (err) {
+    console.error('Error during payment validation:', err);
+    await response.complete('fail');
+    throw err;
+  }
+}
 
-    if (!itemDetails) {
-      throw new Error('Item not found');
+// Function to validate payment response values
+async function checkAllValues(response) {
+  try {
+    // Check if response exists
+    if (!response) {
+      console.error('No response received');
+      return false;
     }
 
-    // Here you would typically show a purchase UI
-    // For Microsoft Store, this would open the store purchase flow
-    console.log('Initiating purchase for:', itemDetails);
+    // Check if response has details
+    if (!response.details) {
+      console.error('No details in response');
+      return false;
+    }
 
-    const request = new PaymentRequest([
-      {
-        supportedMethods: 'https://store.microsoft.com/billing',
-        data: { sku: itemDetails.itemId },
-      },
-    ]);
+    // Validate payment method
+    if (
+      !response.methodName ||
+      response.methodName !== 'https://store.microsoft.com/billing'
+    ) {
+      console.error('Invalid payment method');
+      return false;
+    }
 
-    const response = await request.show();
-    return response.details;
+    // Validate SKU in details
+    if (!response.details.sku) {
+      console.error('No SKU in response details');
+      return false;
+    }
+
+    // Validate that the SKU matches one of our store items
+    const validSkus = Object.values(STORE_ITEMS);
+    if (!validSkus.includes(response.details.sku)) {
+      console.error('Invalid SKU in response');
+      return false;
+    }
+
+    // All validations passed
+    return true;
   } catch (error) {
-    console.error('Purchase failed:', error);
-    throw error;
+    console.error('Error validating response:', error);
+    return false;
   }
 }
 

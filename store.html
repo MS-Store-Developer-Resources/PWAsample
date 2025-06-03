@@ -246,7 +246,7 @@
                 const {
                     initializeStore,
                     getStoreItems,
-                    purchaseItem,
+                    validateResponse,
                     checkPurchases
                 } = await import('./js/store-handler.js');
 
@@ -295,7 +295,18 @@
                                 button.disabled = true;
                                 button.textContent = 'Processing...';
 
-                                const response = await purchaseItem(item.dataset.itemId);
+                                const request = new PaymentRequest([
+                                    {
+                                        supportedMethods: 'https://store.microsoft.com/billing',
+                                        data: { sku: itemDetails.itemId },
+                                    },
+                                ]);
+                                const canMakePayment = await request.canMakePayment();
+                                if (!canMakePayment) {
+                                    throw new Error("Cannot make payment");
+                                }
+                                await request.show();
+                                await validateResponse(response);
 
                                 showMessage('Purchase successful! Your premium features are now available.', 'success');
 
