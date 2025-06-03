@@ -290,36 +290,53 @@
                 purchaseButtons.forEach(button => {
                     button.addEventListener('click', async () => {
                         const item = button.closest('.store-item');
+                        const itemId = item.dataset.itemId;
+                        
+                        if (!itemId) {
+                            console.error('No itemId found for purchase');
+                            showMessage('Purchase failed: Invalid item', 'error');
+                            return;
+                        }
+
                         if (!item.classList.contains('purchased')) {
                             try {
                                 button.disabled = true;
                                 button.textContent = 'Processing...';
 
+                                // Get item details first
+                                const [itemDetails] = await digitalGoodsService.getDetails([itemId]);
+                                if (!itemDetails) {
+                                    throw new Error('Item not found');
+                                }
+
+                                // Create and show payment request
                                 const request = new PaymentRequest([
                                     {
                                         supportedMethods: 'https://store.microsoft.com/billing',
-                                        data: { sku: itemDetails.itemId },
+                                        data: { sku: itemId },
                                     },
                                 ]);
+
                                 const canMakePayment = await request.canMakePayment();
                                 if (!canMakePayment) {
-                                    throw new Error("Cannot make payment");
+                                    throw new Error('Payment method not available');
                                 }
-                                await request.show();
-                                await validateResponse(response);
 
+                                const paymentResponse = await request.show();
+                                await validateResponse(paymentResponse);
+
+                                // Update UI on success
                                 showMessage('Purchase successful! Your premium features are now available.', 'success');
-
-                                // Update UI
                                 item.classList.add('purchased');
                                 const badge = item.querySelector('.purchased-badge');
                                 if (badge) badge.style.display = 'inline-flex';
                                 button.disabled = true;
                                 button.textContent = 'Purchased';
-                            } catch (error) {
-                                // Show error message
-                                showMessage('Purchase failed. Please try again later.', 'error');
 
+                            } catch (error) {
+                                console.error('Purchase failed:', error);
+                                showMessage('Purchase failed. Please try again later.', 'error');
+                                
                                 // Reset button state
                                 button.disabled = false;
                                 button.textContent = 'Purchase';
