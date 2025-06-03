@@ -291,7 +291,7 @@
                     button.addEventListener('click', async () => {
                         const item = button.closest('.store-item');
                         const itemId = item.dataset.itemId;
-                        
+
                         if (!itemId) {
                             console.error('No itemId found for purchase');
                             showMessage('Purchase failed: Invalid item', 'error');
@@ -304,7 +304,8 @@
                                 button.textContent = 'Processing...';
 
                                 // Get item details first
-                                const [itemDetails] = await digitalGoodsService.getDetails([itemId]);
+                                const [itemDetails] = await checkPurchases([itemId]);
+
                                 if (!itemDetails) {
                                     throw new Error('Item not found');
                                 }
@@ -336,7 +337,7 @@
                             } catch (error) {
                                 console.error('Purchase failed:', error);
                                 showMessage('Purchase failed. Please try again later.', 'error');
-                                
+
                                 // Reset button state
                                 button.disabled = false;
                                 button.textContent = 'Purchase';

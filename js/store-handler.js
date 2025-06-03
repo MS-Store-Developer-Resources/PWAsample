@@ -94,9 +94,9 @@ async function checkAllValues(response) {
 }
 
 // Function to check existing purchases
-async function checkPurchases() {
+async function checkPurchases(itemId) {
   try {
-    return await digitalGoodsService.listPurchases();
+    return await digitalGoodsService.listPurchases(itemId);
   } catch (error) {
     console.error('Failed to check purchases:', error);
     throw error;
