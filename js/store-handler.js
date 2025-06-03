@@ -34,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // Function to handle purchasing an item
 async function purchaseItem(itemId) {
   try {
+    debugger;
     // Get item details first
     const [itemDetails] = await digitalGoodsService.getDetails([itemId]);
 

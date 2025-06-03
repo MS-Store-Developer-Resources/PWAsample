@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store - Premium Features</title>
+    <style>
+        :root {
+            --primary-color: #0078d4;
+            --secondary-color: #2b88d8;
+            --background-color: #f5f5f5;
+            --card-background: #ffffff;
+            --text-color: #333333;
+            --success-color: #107c10;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .store-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .store-items {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .store-item {
+            background-color: var(--card-background);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+            position: relative;
+        }
+
+        .store-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .store-item h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .store-item p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .purchase-button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+            width: 100%;
+        }
+
+        .purchase-button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .purchase-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .purchased-badge {
+            background-color: var(--success-color);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .purchased-badge::before {
+            content: "✓";
+            font-weight: bold;
+        }
+
+        .error-message {
+            color: #d83b01;
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #fde7e9;
+            border-radius: 4px;
+        }
+
+        /* Styles for purchased items */
+        .store-item.purchased {
+            border: 2px solid var(--success-color);
+        }
+
+        .store-item.purchased .purchase-button {
+            background-color: var(--success-color);
+            cursor: default;
+        }
+
+        .store-item.purchased .purchase-button::after {
+            content: "Purchased";
+        }
+
+        .store-item.purchased .purchase-button:hover {
+            background-color: var(--success-color);
+        }
+
+        .store-item.disabled {
+            opacity: 0.7;
+            filter: grayscale(0.5);
+        }
+
+        .coming-soon-badge {
+            background-color: #666;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .store-item.disabled:hover {
+            transform: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="store-header">
+            <h1>Premium Features Store</h1>
+            <p>Unlock additional features to enhance your experience</p>
+        </div>
+
+        <div class="store-items">
+            <div class="store-item" data-item-id="super_acceso_vip">
+                <h2>
+                    Premium Features
+                    <span class="purchased-badge" style="display: none;">Purchased</span>
+                </h2>
+                <p>Get access to all premium features including advanced analytics, priority support, and exclusive content.</p>
+                <button class="purchase-button" data-purchase-item="super_acceso_vip">Purchase Premium</button>
+            </div>
+
+            <div class="store-item disabled" data-item-id="remove_ads">
+                <h2>
+                    Remove Ads
+                    <span class="coming-soon-badge">Coming Soon</span>
+                </h2>
+                <p>Enjoy an ad-free experience with no interruptions. This feature will be available in a future update.</p>
+                <button class="purchase-button" disabled>Coming Soon</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { purchaseItem, STORE_ITEMS } from './js/store-handler.js';
+
+        // The store-handler.js will automatically initialize and update the UI
+        // when the page loads, as it's already set up to do so in the DOMContentLoaded event
+
+        // Add additional UI update logic
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Get all store items
+            const storeItems = document.querySelectorAll('.store-item:not(.disabled)');
+            
+            // Add click handlers for purchase buttons
+            storeItems.forEach(item => {
+                const button = item.querySelector('.purchase-button');
+                const badge = item.querySelector('.purchased-badge');
+                
+                button.addEventListener('click', async () => {
+                    if (!item.classList.contains('purchased')) {
+                        try {
+                            await purchaseItem(item.dataset.itemId);
+                            // The store-handler.js will handle the UI update through updateUIWithPurchases
+                        } catch (error) {
+                            console.error('Purchase failed:', error);
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html> 
