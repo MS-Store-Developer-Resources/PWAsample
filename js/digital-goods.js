@@ -35,7 +35,7 @@ class DigitalGoodsService {
       // Our preferred service provider is not available.
       // Use a normal web-based payment flow.
       console.error('Failed to initialize Digital Goods Service:', error);
-      throw;
+      throw
     }
   }
 
