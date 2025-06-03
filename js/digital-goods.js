@@ -61,6 +61,7 @@ class DigitalGoodsService {
     }
 
     try {
+      // The listPurchases method doesn't return consumed products or expired subscriptions.
       const purchases = await this.service.listPurchases();
       return purchases;
     } catch (error) {

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,6 +48,8 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             transition: transform 0.2s;
             position: relative;
+            display: flex;
+            flex-direction: column;
         }
 
         .store-item:hover {
@@ -59,11 +62,20 @@
             display: flex;
             align-items: center;
             gap: 10px;
+            font-size: 1.5rem;
         }
 
         .store-item p {
             color: #666;
             margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 10px 0;
         }
 
         .purchase-button {
@@ -103,13 +115,54 @@
             font-weight: bold;
         }
 
-        .error-message {
-            color: #d83b01;
-            text-align: center;
-            margin: 20px 0;
-            padding: 10px;
-            background-color: #fde7e9;
+        .message-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .message {
+            padding: 15px;
+            margin-bottom: 10px;
             border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .message.success {
+            background-color: #e6f4ea;
+            color: var(--success-color);
+            border: 1px solid var(--success-color);
+        }
+
+        .message.error {
+            background-color: #fde7e9;
+            color: #d83b01;
+            border: 1px solid #d83b01;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+            }
+
+            to {
+                opacity: 0;
+            }
         }
 
         /* Styles for purchased items */
@@ -149,64 +202,164 @@
         .store-item.disabled:hover {
             transform: none;
         }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 18px;
+            color: var(--primary-color);
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
+        <a href="index.html" class="back-link">← Back to App</a>
         <div class="store-header">
             <h1>Premium Features Store</h1>
             <p>Unlock additional features to enhance your experience</p>
         </div>
 
-        <div class="store-items">
-            <div class="store-item" data-item-id="super_acceso_vip">
-                <h2>
-                    Premium Features
-                    <span class="purchased-badge" style="display: none;">Purchased</span>
-                </h2>
-                <p>Get access to all premium features including advanced analytics, priority support, and exclusive content.</p>
-                <button class="purchase-button" data-purchase-item="super_acceso_vip">Purchase Premium</button>
-            </div>
-
-            <div class="store-item disabled" data-item-id="remove_ads">
-                <h2>
-                    Remove Ads
-                    <span class="coming-soon-badge">Coming Soon</span>
-                </h2>
-                <p>Enjoy an ad-free experience with no interruptions. This feature will be available in a future update.</p>
-                <button class="purchase-button" disabled>Coming Soon</button>
-            </div>
+        <div id="store-content">
+            <div class="loading">Loading store...</div>
         </div>
     </div>
 
+    <div id="message-container" class="message-container"></div>
+
     <script type="module">
-        import { purchaseItem, STORE_ITEMS } from './js/store-handler.js';
-
-        // The store-handler.js will automatically initialize and update the UI
-        // when the page loads, as it's already set up to do so in the DOMContentLoaded event
-
-        // Add additional UI update logic
-        document.addEventListener('DOMContentLoaded', async () => {
-            // Get all store items
-            const storeItems = document.querySelectorAll('.store-item:not(.disabled)');
-            
-            // Add click handlers for purchase buttons
-            storeItems.forEach(item => {
-                const button = item.querySelector('.purchase-button');
-                const badge = item.querySelector('.purchased-badge');
+        // Load store-related scripts only when needed
+        async function setupStore() {
+            try {
+                // Import store handler
+                const { initializeStore, purchaseItem, checkPurchases, STORE_ITEMS } = await import('./js/store-handler.js');
                 
-                button.addEventListener('click', async () => {
-                    if (!item.classList.contains('purchased')) {
-                        try {
-                            await purchaseItem(item.dataset.itemId);
-                            // The store-handler.js will handle the UI update through updateUIWithPurchases
-                        } catch (error) {
-                            console.error('Purchase failed:', error);
+                // Initialize store and get item details
+                const itemDetails = await initializeStore();
+
+                // Create store content
+                const storeContent = document.getElementById('store-content');
+                storeContent.innerHTML = '<div class="store-items"></div>';
+                const storeItems = storeContent.querySelector('.store-items');
+
+                // Display each item
+                for (const item of itemDetails) {
+                    const priceStr = new Intl.NumberFormat(navigator.language, {
+                        style: 'currency',
+                        currency: item.price.currency,
+                    }).format(item.price.value);
+                    
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'store-item';
+                    itemElement.dataset.itemId = item.itemId;
+                    
+                    itemElement.innerHTML = `
+                        <h2>
+                            ${item.title}
+                            <span class="purchased-badge" style="display: none;">Purchased</span>
+                        </h2>
+                        <p>${item.description}</p>
+                        <div class="price">${priceStr}</div>
+                        <button class="purchase-button" data-purchase-item="${item.itemId}">
+                            Purchase
+                        </button>
+                    `;
+
+                    storeItems.appendChild(itemElement);
+                }
+
+                // Add click handlers for purchase buttons
+                const purchaseButtons = document.querySelectorAll('.purchase-button');
+                purchaseButtons.forEach(button => {
+                    button.addEventListener('click', async () => {
+                        const item = button.closest('.store-item');
+                        if (!item.classList.contains('purchased')) {
+                            try {
+                                button.disabled = true;
+                                button.textContent = 'Processing...';
+                                
+                                const response = await purchaseItem(item.dataset.itemId);
+                                
+                                // Show success message
+                                showMessage('Purchase successful! Your premium features are now available.', 'success');
+                                
+                                // Update UI
+                                item.classList.add('purchased');
+                                const badge = item.querySelector('.purchased-badge');
+                                if (badge) badge.style.display = 'inline-flex';
+                                button.disabled = true;
+                                button.textContent = 'Purchased';
+                            } catch (error) {
+                                // Show error message
+                                showMessage('Purchase failed. Please try again later.', 'error');
+                                
+                                // Reset button state
+                                button.disabled = false;
+                                button.textContent = 'Purchase';
+                            }
                         }
+                    });
+                });
+
+                // Check existing purchases and update UI
+                const purchases = await checkPurchases();
+                purchases.forEach(purchase => {
+                    const item = document.querySelector(`[data-item-id="${purchase.itemId}"]`);
+                    if (item) {
+                        item.classList.add('purchased');
+                        const button = item.querySelector('.purchase-button');
+                        const badge = item.querySelector('.purchased-badge');
+                        if (button) {
+                            button.disabled = true;
+                            button.textContent = 'Purchased';
+                        }
+                        if (badge) badge.style.display = 'inline-flex';
                     }
                 });
-            });
-        });
+
+            } catch (error) {
+                console.error('Failed to initialize store:', error);
+                document.getElementById('store-content').innerHTML = `
+                    <div class="message error">
+                        Failed to load store. Please try again later.
+                    </div>
+                `;
+            }
+        }
+
+        // Function to show messages
+        function showMessage(text, type) {
+            const container = document.getElementById('message-container');
+            const message = document.createElement('div');
+            message.className = `message ${type}`;
+            message.textContent = text;
+            
+            container.appendChild(message);
+            
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                message.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => {
+                    container.removeChild(message);
+                }, 300);
+            }, 5000);
+        }
+
+        // Initialize store when page loads
+        document.addEventListener('DOMContentLoaded', setupStore);
     </script>
 </body>
-</html> 
+
+</html>

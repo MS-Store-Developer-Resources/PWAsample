@@ -1,40 +1,29 @@
 import digitalGoodsService from './digital-goods.js';
 
-// Example Microsoft Store item IDs
+// Microsoft Store item IDs
 const STORE_ITEMS = {
   PREMIUM_FEATURES: 'super_acceso_vip',
   REMOVE_ADS: 'remove_ads',
-  // Add more items as needed
 };
 
-// Initialize the store when the page loads
-document.addEventListener('DOMContentLoaded', async () => {
+// Initialize the store
+async function initializeStore() {
   try {
     await digitalGoodsService.initialize();
-    console.log('Store initialized successfully');
-
-    // Example: Get details for all items
     const itemDetails = await digitalGoodsService.getDetails([
       STORE_ITEMS.PREMIUM_FEATURES,
       STORE_ITEMS.REMOVE_ADS,
     ]);
-    console.log('Available items:', itemDetails);
-
-    // Example: Check existing purchases
-    const purchases = await digitalGoodsService.listPurchases();
-    console.log('Current purchases:', purchases);
-
-    // Update UI based on purchases
-    updateUIWithPurchases(purchases);
+    return itemDetails;
   } catch (error) {
     console.error('Failed to initialize store:', error);
+    throw error;
   }
-});
+}
 
 // Function to handle purchasing an item
 async function purchaseItem(itemId) {
   try {
-    debugger;
     // Get item details first
     const [itemDetails] = await digitalGoodsService.getDetails([itemId]);
 
@@ -45,36 +34,32 @@ async function purchaseItem(itemId) {
     // Here you would typically show a purchase UI
     // For Microsoft Store, this would open the store purchase flow
     console.log('Initiating purchase for:', itemDetails);
+    const item = itemDetails[0];
 
-    // After successful purchase, acknowledge it
-    // Note: In a real implementation, you would get the purchaseToken from the purchase flow
-    // await digitalGoodsService.acknowledge(purchaseToken, true);
+    const request = new PaymentRequest([
+      {
+        supportedMethods: 'https://store.microsoft.com/billing',
+        data: { sku: item.itemId },
+      },
+    ]);
+
+    const response = await request.show();
+    return response.details;
   } catch (error) {
     console.error('Purchase failed:', error);
+    throw error;
   }
 }
 
-// Function to update UI based on purchases
-function updateUIWithPurchases(purchases) {
-  // Example: Update UI elements based on purchases
-  purchases.forEach((purchase) => {
-    const element = document.querySelector(
-      `[data-item-id="${purchase.itemId}"]`
-    );
-    if (element) {
-      element.classList.add('purchased');
-      // Disable purchase button or show "Purchased" status
-    }
-  });
+// Function to check existing purchases
+async function checkPurchases() {
+  try {
+    return await digitalGoodsService.listPurchases();
+  } catch (error) {
+    console.error('Failed to check purchases:', error);
+    throw error;
+  }
 }
 
-// Example: Add click handlers to purchase buttons
-document.addEventListener('click', async (event) => {
-  if (event.target.matches('[data-purchase-item]')) {
-    const itemId = event.target.dataset.purchaseItem;
-    await purchaseItem(itemId);
-  }
-});
-
-// Export functions for use in other modules if needed
-export { purchaseItem, STORE_ITEMS };
+// Export functions and constants for use in other modules
+export { initializeStore, purchaseItem, checkPurchases, STORE_ITEMS };
