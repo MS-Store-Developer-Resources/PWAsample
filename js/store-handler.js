@@ -22,7 +22,7 @@ async function getStoreItems() {
   try {
     const itemDetails = await digitalGoodsService.getDetails([
       STORE_ITEMS.PREMIUM_FEATURES,
-      STORE_ITEMS.REMOVE_ADS,
+      //STORE_ITEMS.REMOVE_ADS,
     ]);
     return itemDetails;
   } catch (error) {
