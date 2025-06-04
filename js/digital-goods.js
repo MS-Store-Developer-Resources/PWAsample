@@ -23,7 +23,25 @@ class DigitalGoodsService {
     if (!this.initialized) {
       await this.initialize();
     }
-    return await this.service.getDetails(itemIds);
+
+    if (!this.service) {
+      throw new Error('Digital Goods Service not initialized properly');
+    }
+
+    try {
+      const details = await this.service.getDetails(itemIds);
+      if (!details) {
+        console.warn('No details returned for items:', itemIds);
+        return [];
+      }
+      return details;
+    } catch (error) {
+      console.error('Error getting item details:', error);
+      if (error.name === 'OperationError') {
+        throw new Error('Failed to get item details. Please ensure you are using a supported browser and try again.');
+      }
+      throw error;
+    }
   }
 
   async listPurchases() {

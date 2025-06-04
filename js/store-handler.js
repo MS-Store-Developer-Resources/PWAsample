@@ -17,7 +17,18 @@ async function getStoreItems(items = Object.values(STORE_ITEMS)) {
     console.warn('No items specified');
     return [];
   }
-  return (await digitalGoodsService.getDetails(items)) || [];
+
+  try {
+    const details = await digitalGoodsService.getDetails(items);
+    if (!details || details.length === 0) {
+      console.warn('No item details returned');
+      return [];
+    }
+    return details;
+  } catch (error) {
+    console.error('Error getting store items:', error);
+    throw new Error(`Failed to load store items: ${error.message}`);
+  }
 }
 
 async function validateResponse(response) {

@@ -240,153 +240,201 @@
     <div id="message-container" class="message-container"></div>
 
     <script type="module">
-        // Load store-related scripts only when needed
-        async function setupStore() {
-            try {
-                const {
-                    initializeStore,
-                    getStoreItems,
-                    validateResponse,
-                    checkPurchases
-                } = await import('./js/store-handler.js');
+        // Store object to manage all store-related functionality
+        const store = {
+            async init() {
+                try {
+                    const module = await import('./js/store-handler.js');
+                    // Copy all enumerable properties from the module object (imported from ./js/store-handler.js) into the store object.
+                    Object.assign(this, module);
+                    console.log('Store module loaded successfully');
+                    await this.setup();
+                } catch (error) {
+                    console.error('Failed to load store module:', error);
+                    this.showError('Failed to load store module. Please try again later.');
+                }
+            },
 
-                await initializeStore();
+            async setup() {
+                try {
+                    await this.initializeStore();
+                    console.log('Store initialized, attempting to get items...');
 
-                const itemDetails = await getStoreItems();
+                    const itemDetails = await this.getStoreItems();
+                    console.log('Store items retrieved:', itemDetails);
 
-                // Create store content
+                    await this.renderItems(itemDetails);
+                    await this.updatePurchasedItems();
+
+                } catch (error) {
+                    console.error('Store setup failed:', error);
+                    this.showError();
+                }
+            },
+
+            async renderItems(itemDetails) {
                 const storeContent = document.getElementById('store-content');
                 storeContent.innerHTML = '<div class="store-items"></div>';
                 const storeItems = storeContent.querySelector('.store-items');
 
-                // Display each item
                 for (const item of itemDetails) {
-                    const priceStr = new Intl.NumberFormat(navigator.language, {
-                        style: 'currency',
-                        currency: item.price.currency,
-                    }).format(item.price.value);
-
-                    const itemElement = document.createElement('div');
-                    itemElement.className = 'store-item';
-                    itemElement.dataset.itemId = item.itemId;
-
-                    itemElement.innerHTML = `
-                        <h2>
-                            ${item.title}
-                            <span class="purchased-badge" style="display: none;">Purchased</span>
-                        </h2>
-                        <p>${item.description}</p>
-                        <div class="price">${priceStr}</div>
-                        <button class="purchase-button" data-purchase-item="${item.itemId}">
-                            Purchase
-                        </button>
-                    `;
-
+                    const itemElement = this.createItemElement(item);
                     storeItems.appendChild(itemElement);
                 }
 
-                // Add click handlers for purchase buttons
+                this.setupPurchaseHandlers();
+            },
+
+            createItemElement(item) {
+                const priceStr = new Intl.NumberFormat(navigator.language, {
+                    style: 'currency',
+                    currency: item.price.currency,
+                }).format(item.price.value);
+
+                const itemElement = document.createElement('div');
+                itemElement.className = 'store-item';
+                itemElement.dataset.itemId = item.itemId;
+
+                itemElement.innerHTML = `
+                    <h2>
+                        ${item.title}
+                        <span class="purchased-badge" style="display: none;">Purchased</span>
+                    </h2>
+                    <p>${item.description}</p>
+                    <div class="price">${priceStr}</div>
+                    <button class="purchase-button" data-purchase-item="${item.itemId}">
+                        Purchase
+                    </button>
+                `;
+
+                return itemElement;
+            },
+
+            setupPurchaseHandlers() {
                 const purchaseButtons = document.querySelectorAll('.purchase-button');
                 purchaseButtons.forEach(button => {
-                    button.addEventListener('click', async () => {
-                        const item = button.closest('.store-item');
-                        const itemId = item.dataset.itemId;
+                    button.addEventListener('click', (event) => this.handlePurchase(event));
+                });
+            },
 
-                        if (!itemId) {
-                            console.error('No itemId found for purchase');
-                            showMessage('Purchase failed: Invalid item', 'error');
-                            return;
+            async handlePurchase(event) {
+                const button = event.target;
+                const item = button.closest('.store-item');
+                const itemId = item.dataset.itemId;
+
+                if (!itemId) {
+                    console.error('No itemId found for purchase');
+                    this.showMessage('Purchase failed: Invalid item', 'error');
+                    return;
+                }
+
+                if (item.classList.contains('purchased')) {
+                    return;
+                }
+
+                try {
+                    await this.processPurchase(button, item, itemId);
+                } catch (error) {
+                    this.handlePurchaseError(error, button);
+                }
+            },
+
+            async processPurchase(button, item, itemId) {
+                button.disabled = true;
+                button.textContent = 'Processing...';
+
+                const [itemDetails] = await this.getStoreItems([itemId]);
+                if (!itemDetails) {
+                    throw new Error('Item not found');
+                }
+
+                const request = new PaymentRequest([
+                    {
+                        supportedMethods: 'https://store.microsoft.com/billing',
+                        data: {
+                            sku: itemId
                         }
+                    }
+                ]);
 
-                        if (!item.classList.contains('purchased')) {
-                            try {
-                                button.disabled = true;
-                                button.textContent = 'Processing...';
+                const paymentResponse = await request.show();
+                await this.validateResponse(paymentResponse);
 
-                                // Get item details first
-                                const [itemDetails] = await getStoreItems([itemId]);
+                this.updateItemAsPurchased(item, button);
+                this.showMessage('Purchase successful! Your premium features are now available.', 'success');
+            },
 
-                                if (!itemDetails) {
-                                    throw new Error('Item not found');
-                                }
+            updateItemAsPurchased(item, button) {
+                item.classList.add('purchased');
+                const badge = item.querySelector('.purchased-badge');
+                if (badge) badge.style.display = 'inline-flex';
+                button.disabled = true;
+                button.textContent = 'Purchased';
+            },
 
-                                // Create and show payment request
-                                const request = new PaymentRequest([
-                                    {
-                                        supportedMethods: 'https://store.microsoft.com/billing',
-                                        data: { sku: itemId },
-                                    },
-                                ]);
+            handlePurchaseError(error, button) {
+                console.error('Purchase error details:', error);
+                if (error.name === 'OperationError') {
+                    this.showMessage('Digital goods operation failed. Please ensure you are using a supported browser and try again.', 'error');
+                } else if (error.name === 'AbortError') {
+                    this.showMessage('Purchase was cancelled.', 'error');
+                } else {
+                    this.showMessage(`Purchase failed: ${error.message || 'Please try again later.'}`, 'error');
+                }
+                button.disabled = false;
+                button.textContent = 'Purchase';
+            },
 
-                                const paymentResponse = await request.show();
-                                await validateResponse(paymentResponse);
-
-                                // Update UI on success
-                                showMessage('Purchase successful! Your premium features are now available.', 'success');
-                                item.classList.add('purchased');
-                                const badge = item.querySelector('.purchased-badge');
-                                if (badge) badge.style.display = 'inline-flex';
+            async updatePurchasedItems() {
+                try {
+                    const purchases = await this.checkPurchases();
+                    purchases.forEach(purchase => {
+                        const item = document.querySelector(`[data-item-id="${purchase.itemId}"]`);
+                        if (item) {
+                            const button = item.querySelector('.purchase-button');
+                            const badge = item.querySelector('.purchased-badge');
+                            if (button) {
                                 button.disabled = true;
                                 button.textContent = 'Purchased';
-
-                            } catch (error) {
-                                console.error('Purchase failed:', error);
-                                showMessage('Purchase failed. Please try again later.', 'error');
-
-                                // Reset button state
-                                button.disabled = false;
-                                button.textContent = 'Purchase';
                             }
+                            if (badge) badge.style.display = 'inline-flex';
+                            item.classList.add('purchased');
                         }
                     });
-                });
+                } catch (error) {
+                    console.error('Failed to update purchased items:', error);
+                }
+            },
 
-                // Check existing purchases and update UI
-                const purchases = await checkPurchases();
-                purchases.forEach(purchase => {
-                    const item = document.querySelector(`[data-item-id="${purchase.itemId}"]`);
-                    if (item) {
-                        item.classList.add('purchased');
-                        const button = item.querySelector('.purchase-button');
-                        const badge = item.querySelector('.purchased-badge');
-                        if (button) {
-                            button.disabled = true;
-                            button.textContent = 'Purchased';
-                        }
-                        if (badge) badge.style.display = 'inline-flex';
-                    }
-                });
+            showError(message = 'Failed to load store. Please try again later.') {
+                const storeContent = document.getElementById('store-content');
+                if (storeContent) {
+                    storeContent.innerHTML = `
+                        <div class="message error">
+                            ${message}
+                        </div>
+                    `;
+                }
+            },
 
-            } catch (error) {
-                console.error(error);
-                document.getElementById('store-content').innerHTML = `
-                    <div class="message error">
-                        Failed to load store. Please try again later.
-                    </div>
-                `;
-            }
-        }
+            showMessage(text, type) {
+                const container = document.getElementById('message-container');
+                const message = document.createElement('div');
+                message.className = `message ${type}`;
+                message.textContent = text;
 
-        // Function to show messages
-        function showMessage(text, type) {
-            const container = document.getElementById('message-container');
-            const message = document.createElement('div');
-            message.className = `message ${type}`;
-            message.textContent = text;
+                container.appendChild(message);
 
-            container.appendChild(message);
-
-            // Remove message after 5 seconds
-            setTimeout(() => {
-                message.style.animation = 'fadeOut 0.3s ease-out';
+                // Remove message after 5 seconds
                 setTimeout(() => {
-                    container.removeChild(message);
-                }, 300);
-            }, 5000);
-        }
-
-        // Initialize store when page loads
-        document.addEventListener('DOMContentLoaded', setupStore);
+                    message.style.animation = 'fadeOut 0.3s ease-out';
+                    setTimeout(() => {
+                        container.removeChild(message);
+                    }, 300);
+                }, 5000);
+            }
+        };
+        store.init();
     </script>
 </body>
 
