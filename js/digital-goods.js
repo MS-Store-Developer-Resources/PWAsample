@@ -20,6 +20,17 @@ class DigitalGoodsService {
   }
 
   async getDetails(itemIds) {
+    await this.ensureInitialization();
+
+    try {
+      return await this.fetchAndProcessDetails(itemIds);
+    } catch (error) {
+      this.handleError(error);
+      throw error;
+    }
+  }
+
+  async ensureInitialization() {
     if (!this.initialized) {
       await this.initialize();
     }
@@ -27,20 +38,27 @@ class DigitalGoodsService {
     if (!this.service) {
       throw new Error('Digital Goods Service not initialized properly');
     }
+  }
 
-    try {
-      const details = await this.service.getDetails(itemIds);
-      if (!details) {
-        console.warn('No details returned for items:', itemIds);
-        return [];
-      }
-      return details;
-    } catch (error) {
-      console.error('Error getting item details:', error);
-      if (error.name === 'OperationError') {
-        throw new Error('Failed to get item details. Please ensure you are using a supported browser and try again.');
-      }
-      throw error;
+  async fetchAndProcessDetails(itemIds) {
+    const details = await this.service.getDetails(itemIds);
+    if (!details) {
+      this.warnNoDetails(itemIds);
+      return [];
+    }
+    return details;
+  }
+
+  warnNoDetails(itemIds) {
+    console.warn('No details returned for items:', itemIds);
+  }
+
+  handleError(error) {
+    console.error('Error getting item details:', error);
+    if (error.name === 'OperationError') {
+      throw new Error(
+        'Failed to get item details. Please ensure you are using a supported browser and try again.'
+      );
     }
   }
 
