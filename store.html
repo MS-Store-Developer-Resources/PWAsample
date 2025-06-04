@@ -319,11 +319,6 @@
                                     },
                                 ]);
 
-                                const canMakePayment = await request.canMakePayment();
-                                if (!canMakePayment) {
-                                    throw new Error('Payment method not available');
-                                }
-
                                 const paymentResponse = await request.show();
                                 await validateResponse(paymentResponse);
 
