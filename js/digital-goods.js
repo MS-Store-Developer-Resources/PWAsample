@@ -21,13 +21,7 @@ class DigitalGoodsService {
 
   async getDetails(itemIds) {
     await this.ensureInitialization();
-
-    try {
-      return await this.fetchAndProcessDetails(itemIds);
-    } catch (error) {
-      this.handleError(error);
-      throw error;
-    }
+    return await this.fetchAndProcessDetails(itemIds);
   }
 
   async ensureInitialization() {
@@ -51,15 +45,6 @@ class DigitalGoodsService {
 
   warnNoDetails(itemIds) {
     console.warn('No details returned for items:', itemIds);
-  }
-
-  handleError(error) {
-    console.error('Error getting item details:', error);
-    if (error.name === 'OperationError') {
-      throw new Error(
-        'Failed to get item details. Please ensure you are using a supported browser and try again.'
-      );
-    }
   }
 
   async listPurchases() {

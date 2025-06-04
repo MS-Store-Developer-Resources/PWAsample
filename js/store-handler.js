@@ -29,7 +29,7 @@ async function getStoreItems(items = Object.values(STORE_ITEMS)) {
     return details;
   } catch (error) {
     console.error('Error getting store items:', error);
-    throw new Error(`Failed to load store items: ${error.message}`);
+    throw new Error(`Error getting store items: ${error.message}`);
   }
 }
 
