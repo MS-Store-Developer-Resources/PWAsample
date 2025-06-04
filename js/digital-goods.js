@@ -63,17 +63,13 @@ class DigitalGoodsService {
   }
 
   async listPurchases() {
-    if (!this.initialized) {
-      await this.initialize();
-    }
+    await this.ensureInitialization();
     // The listPurchases method doesn't return consumed products or expired subscriptions.
     return await this.service.listPurchases();
   }
 
   async listPurchaseHistory() {
-    if (!this.initialized) {
-      await this.initialize();
-    }
+    await this.ensureInitialization();
     return await this.service.listPurchaseHistory();
   }
 }
