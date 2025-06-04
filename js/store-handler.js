@@ -8,116 +8,73 @@ const STORE_ITEMS = {
 
 // Initialize the digital goods service
 async function initializeStore() {
-  try {
-    await digitalGoodsService.initialize();
-    console.log('Store initialized successfully');
-  } catch (error) {
-    console.error('Failed to initialize store:', error);
-    throw error;
-  }
+  await digitalGoodsService.initialize();
 }
 
-// Get details for all available items
-async function getStoreItems() {
-  try {
-    const itemDetails = await digitalGoodsService.getDetails([
-      STORE_ITEMS.PREMIUM_FEATURES,
-      //STORE_ITEMS.REMOVE_ADS,
-    ]);
-    return itemDetails;
-  } catch (error) {
-    console.error('Failed to get store items:', error);
-    throw error;
+// Get details for store items
+async function getStoreItems(items = Object.values(STORE_ITEMS)) {
+  if (!items || items.length === 0) {
+    console.warn('No items specified');
+    return [];
   }
-}
-
-async function getItemDetails(item) {
-  try {
-    const itemDetails = await digitalGoodsService.getDetails(item);
-    return itemDetails;
-  } catch (error) {
-    console.error('Failed to get store item:', error);
-    throw error;
-  }
+  return (await digitalGoodsService.getDetails(items)) || [];
 }
 
 async function validateResponse(response) {
-  try {
-    if (await checkAllValues(response)) {
-      console.log('Payment validation successful');
-      await response.complete('success');
-    } else {
-      console.log('Payment validation failed');
-      await response.complete('fail');
-      throw new Error('Payment validation failed');
-    }
-  } catch (err) {
-    console.error('Error during payment validation:', err);
+  if (await checkAllValues(response)) {
+    console.log('Payment validation successful');
+    await response.complete('success');
+  } else {
+    console.log('Payment validation failed');
     await response.complete('fail');
-    throw err;
+    throw new Error('Payment validation failed');
   }
 }
 
 // Function to validate payment response values
 async function checkAllValues(response) {
-  try {
-    // Check if response exists
-    if (!response) {
-      console.error('No response received');
-      return false;
-    }
-
-    // Check if response has details
-    if (!response.details) {
-      console.error('No details in response');
-      return false;
-    }
-
-    // Validate payment method
-    if (
-      !response.methodName ||
-      response.methodName !== 'https://store.microsoft.com/billing'
-    ) {
-      console.error('Invalid payment method');
-      return false;
-    }
-
-    // Validate SKU in details
-    if (!response.details.sku) {
-      console.error('No SKU in response details');
-      return false;
-    }
-
-    // Validate that the SKU matches one of our store items
-    const validSkus = Object.values(STORE_ITEMS);
-    if (!validSkus.includes(response.details.sku)) {
-      console.error('Invalid SKU in response');
-      return false;
-    }
-
-    // All validations passed
-    return true;
-  } catch (error) {
-    console.error('Error validating response:', error);
+  // Check if response exists
+  if (!response) {
+    console.error('No response received');
     return false;
   }
+
+  // Check if response has details
+  if (!response.details) {
+    console.error('No details in response');
+    return false;
+  }
+
+  // Validate payment method
+  if (
+    !response.methodName ||
+    response.methodName !== 'https://store.microsoft.com/billing'
+  ) {
+    console.error('Invalid payment method');
+    return false;
+  }
+
+  // Validate SKU in details
+  if (!response.details.sku) {
+    console.error('No SKU in response details');
+    return false;
+  }
+
+  // Validate that the SKU matches one of our store items
+  const validSkus = Object.values(STORE_ITEMS);
+  if (!validSkus.includes(response.details.sku)) {
+    console.error('Invalid SKU in response');
+    return false;
+  }
+
+  // All validations passed
+  return true;
 }
 
 // Function to check existing purchases
 async function checkPurchases() {
-  try {
-    return await digitalGoodsService.listPurchases();
-  } catch (error) {
-    console.error('Failed to check purchases:', error);
-    throw error;
-  }
+  return await digitalGoodsService.listPurchases();
 }
 
 // Export functions and constants for use in other modules
-export {
-  initializeStore,
-  getStoreItems,
-  checkPurchases,
-  validateResponse,
-  getItemDetails,
-};
+export { initializeStore, getStoreItems, checkPurchases, validateResponse };

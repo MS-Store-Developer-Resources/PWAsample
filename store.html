@@ -247,8 +247,7 @@
                     initializeStore,
                     getStoreItems,
                     validateResponse,
-                    checkPurchases,
-                    getItemDetails
+                    checkPurchases
                 } = await import('./js/store-handler.js');
 
                 await initializeStore();
@@ -305,7 +304,7 @@
                                 button.textContent = 'Processing...';
 
                                 // Get item details first
-                                const [itemDetails] = await getItemDetails([itemId]);
+                                const [itemDetails] = await getStoreItems([itemId]);
 
                                 if (!itemDetails) {
                                     throw new Error('Item not found');
@@ -359,7 +358,7 @@
                 });
 
             } catch (error) {
-                console.error('Failed to initialize store:', error);
+                console.error(error);
                 document.getElementById('store-content').innerHTML = `
                     <div class="message error">
                         Failed to load store. Please try again later.
