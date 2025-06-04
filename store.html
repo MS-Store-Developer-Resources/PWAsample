@@ -251,7 +251,7 @@
                     await this.setup();
                 } catch (error) {
                     console.error('Failed to load store module:', error);
-                    this.showError('Failed to load store module. Please try again later.');
+                    this.showError(`Failed to load store module: ${error?.message}`);
                 }
             },
 
@@ -268,7 +268,7 @@
 
                 } catch (error) {
                     console.error('Store setup failed:', error);
-                    this.showError();
+                    this.showError(`Store setup failed: ${error?.message}`);
                 }
             },
 
@@ -406,7 +406,7 @@
                 }
             },
 
-            showError(message = 'Failed to load store. Please try again later.') {
+            showError(message) {
                 const storeContent = document.getElementById('store-content');
                 if (storeContent) {
                     storeContent.innerHTML = `
