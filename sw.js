@@ -10,7 +10,6 @@ const precachedAssets = [
   './offline.html',
   './style.css',
   './app.js',
-  './update-handler.js',
   './share-handler.js',
   './cycletracker.json',
   './icons/circle.svg',
@@ -21,6 +20,8 @@ const precachedAssets = [
   './screenshots/main-mobile.png',
   './screenshots/about.png',
   './screenshots/about-mobile.png',
+  './js/digital-goods.js',
+  './js/store-handler.js',
 ];
 
 importScripts(
