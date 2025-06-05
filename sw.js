@@ -1,43 +1,39 @@
-// This is the service worker with the combined offline experience (Offline page + Offline copy of pages)
-
-const cacheName = 'cycletracker-v1';
-
-// any changes to the listed files here will trigger an update message notification on the client
-const precachedAssets = [
-  './',
-  './index.html',
-  './about.html',
-  './offline.html',
-  './style.css',
-  './app.js',
-  './share-handler.js',
-  './cycletracker.json',
-  './icons/circle.svg',
-  './icons/tire.svg',
-  './icons/wheel.svg',
-  './favicon.ico',
-  './screenshots/main.png',
-  './screenshots/main-mobile.png',
-  './screenshots/about.png',
-  './screenshots/about-mobile.png',
-  './js/digital-goods.js',
-  './js/store-handler.js',
-];
-
 importScripts(
-  'https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js'
+  'https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js'
 );
 
-const offlineFallbackPage = 'offline.html';
-//asdasd
-self.addEventListener('install', (event) => {
-  // Precache assets on install
-  event.waitUntil(
-    caches.open(cacheName).then((cache) => {
-      return cache.addAll(precachedAssets);
-    })
+// Immediately activate new service worker
+self.skipWaiting();
+
+workbox.core.clientsClaim();
+
+// we are not using bundler here, so we need to modify the revision each time we have an update.
+workbox.precaching // Define your own precache manifest
+  .precacheAndRoute(
+    [
+      { url: './', revision: '1' },
+      { url: './index.html', revision: '1' },
+      { url: './style.css', revision: '1' },
+      { url: './app.js', revision: '1' },
+      { url: './offline.html', revision: '1' },
+      { url: './share-handler.js', revision: '1' },
+      { url: './icons/circle.svg', revision: '1' },
+      { url: './icons/tire.svg', revision: '1' },
+      { url: './icons/wheel.svg', revision: '1' },
+      { url: './favicon.ico', revision: '1' },
+      { url: './screenshots/main.png', revision: '1' },
+      { url: './screenshots/main-mobile.png', revision: '1' },
+      { url: './screenshots/about.png', revision: '1' },
+      { url: './screenshots/about-mobile.png', revision: '1' },
+      { url: './js/digital-goods.js', revision: '1' },
+      { url: './js/store-handler.js', revision: '1' },
+      // Add more files as needed
+    ],
+    {
+      // Ignore all URL parameters.
+      ignoreURLParametersMatching: [/.*/],
+    }
   );
-});
 
 // Listen for SKIP_WAITING message from client
 self.addEventListener('message', (event) => {
@@ -48,25 +44,14 @@ self.addEventListener('message', (event) => {
 // Notify clients about updates
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    Promise.all([
-      caches
-        .keys()
-        .then((keys) =>
-          Promise.all(
-            keys
-              .filter((key) => key !== cacheName)
-              .map((key) => caches.delete(key))
-          )
-        ),
-      self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({
-            type: 'UPDATE_AVAILABLE',
-            message: 'A new version of Cycle Tracker is available!',
-          });
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'UPDATE_AVAILABLE',
+          message: 'A new version of Cycle Tracker is available!',
         });
-      }),
-    ])
+      });
+    })
   );
 });
 
@@ -74,7 +59,7 @@ self.addEventListener('activate', (event) => {
 workbox.routing.registerRoute(
   ({ request }) => request.mode === 'navigate',
   new workbox.strategies.NetworkFirst({
-    cacheName: cacheName,
+    cacheName: 'html-assets', // Use a unique cache name
     plugins: [new workbox.expiration.ExpirationPlugin({ maxEntries: 50 })],
   })
 );
@@ -86,7 +71,7 @@ workbox.routing.registerRoute(
     request.destination === 'script' ||
     request.destination === 'image',
   new workbox.strategies.CacheFirst({
-    cacheName: cacheName,
+    cacheName: 'static-assets', // Use a unique cache name
     plugins: [
       new workbox.expiration.ExpirationPlugin({
         maxEntries: 60,
