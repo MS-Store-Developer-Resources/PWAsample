@@ -8,32 +8,32 @@ self.skipWaiting();
 workbox.core.clientsClaim();
 
 // we are not using bundler here, so we need to modify the revision each time we have an update.
-workbox.precaching // Define your own precache manifest
-  .precacheAndRoute(
-    [
-      { url: './', revision: '1' },
-      { url: './index.html', revision: '1' },
-      { url: './style.css', revision: '1' },
-      { url: './app.js', revision: '1' },
-      { url: './offline.html', revision: '1' },
-      { url: './share-handler.js', revision: '1' },
-      { url: './icons/circle.svg', revision: '1' },
-      { url: './icons/tire.svg', revision: '1' },
-      { url: './icons/wheel.svg', revision: '1' },
-      { url: './favicon.ico', revision: '1' },
-      { url: './screenshots/main.png', revision: '1' },
-      { url: './screenshots/main-mobile.png', revision: '1' },
-      { url: './screenshots/about.png', revision: '1' },
-      { url: './screenshots/about-mobile.png', revision: '1' },
-      { url: './js/digital-goods.js', revision: '1' },
-      { url: './js/store-handler.js', revision: '1' },
-      // Add more files as needed
-    ],
-    {
-      // Ignore all URL parameters.
-      ignoreURLParametersMatching: [/.*/],
-    }
-  );
+// https://developer.chrome.com/docs/workbox/modules/workbox-precaching?hl=en
+workbox.precaching.precacheAndRoute(
+  [
+    { url: './', revision: '1' },
+    { url: './index.html', revision: '1' },
+    { url: './style.css', revision: '1' },
+    { url: './app.js', revision: '1' },
+    { url: './offline.html', revision: '1' },
+    { url: './share-handler.js', revision: '1' },
+    { url: './icons/circle.svg', revision: '1' },
+    { url: './icons/tire.svg', revision: '1' },
+    { url: './icons/wheel.svg', revision: '1' },
+    { url: './favicon.ico', revision: '1' },
+    { url: './screenshots/main.png', revision: '1' },
+    { url: './screenshots/main-mobile.png', revision: '1' },
+    { url: './screenshots/about.png', revision: '1' },
+    { url: './screenshots/about-mobile.png', revision: '1' },
+    { url: './js/digital-goods.js', revision: '1' },
+    { url: './js/store-handler.js', revision: '1' },
+    // Add more files as needed
+  ],
+  {
+    // Ignore all URL parameters.
+    ignoreURLParametersMatching: [/.*/],
+  }
+);
 
 // Listen for SKIP_WAITING message from client
 self.addEventListener('message', (event) => {
