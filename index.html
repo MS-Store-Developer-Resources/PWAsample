@@ -76,7 +76,7 @@
     <script src="share-handler.js" defer></script>
     <script type="module">
         import { Workbox } from 'https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-window.prod.mjs';
-        const wb = new Workbox('/sw.js');
+        const wb = new Workbox('sw.js');
 
         // Listen for the waiting event
         wb.addEventListener('waiting', () => {
