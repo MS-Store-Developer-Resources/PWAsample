@@ -1,7 +1,9 @@
 // This is the service worker with the combined offline experience (Offline page + Offline copy of pages)
 
-const CACHE = 'cycletracker-v1';
-const ASSETS = [
+const cacheName = 'cycletracker-v1';
+
+// any changes to the listed files here will trigger an update message notification on the client
+const precachedAssets = [
   './',
   './index.html',
   './about.html',
@@ -18,7 +20,7 @@ const ASSETS = [
   './screenshots/main.png',
   './screenshots/main-mobile.png',
   './screenshots/about.png',
-  './screenshots/about-mobile.png'
+  './screenshots/about-mobile.png',
 ];
 
 importScripts(
@@ -26,121 +28,86 @@ importScripts(
 );
 
 const offlineFallbackPage = 'offline.html';
+//asdasd
+self.addEventListener('install', (event) => {
+  // Precache assets on install
+  event.waitUntil(
+    caches.open(cacheName).then((cache) => {
+      return cache.addAll(precachedAssets);
+    })
+  );
+});
 
-// Handle update notifications
+// Listen for SKIP_WAITING message from client
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
-
-// Enable navigation preload if supported
-if (workbox.navigationPreload.isSupported()) {
-  workbox.navigationPreload.enable();
-}
-
-// Cache the offline page during install
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
-  );
-});
-
 // Notify clients about updates
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     Promise.all([
-      // Clean up old caches
-      caches.keys().then((keys) => {
-        return Promise.all(
-          keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))
-        );
-      }),
-      // Notify all clients about the update
+      caches
+        .keys()
+        .then((keys) =>
+          Promise.all(
+            keys
+              .filter((key) => key !== cacheName)
+              .map((key) => caches.delete(key))
+          )
+        ),
       self.clients.matchAll().then((clients) => {
         clients.forEach((client) => {
           client.postMessage({
             type: 'UPDATE_AVAILABLE',
-            message: 'A new version of Cycle Tracker is available!'
+            message: 'A new version of Cycle Tracker is available!',
           });
         });
-      })
+      }),
     ])
   );
 });
 
-// Handle navigation requests with NetworkFirst strategy
+// 1. Navigation requests (HTML pages)
 workbox.routing.registerRoute(
   ({ request }) => request.mode === 'navigate',
   new workbox.strategies.NetworkFirst({
-    cacheName: CACHE,
-    plugins: [
-      new workbox.expiration.ExpirationPlugin({
-        maxEntries: 50,
-      }),
-    ],
+    cacheName: cacheName,
+    plugins: [new workbox.expiration.ExpirationPlugin({ maxEntries: 50 })],
   })
 );
 
-// Handle static assets with CacheFirst strategy
+// 2. Static assets (scripts, styles, images)
 workbox.routing.registerRoute(
   ({ request }) =>
     request.destination === 'style' ||
     request.destination === 'script' ||
     request.destination === 'image',
   new workbox.strategies.CacheFirst({
-    cacheName: CACHE,
+    cacheName: cacheName,
     plugins: [
       new workbox.expiration.ExpirationPlugin({
         maxEntries: 60,
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+        maxAgeSeconds: 30 * 24 * 60 * 60,
       }),
     ],
   })
 );
 
-// Handle other requests with StaleWhileRevalidate strategy
-workbox.routing.registerRoute(
-  ({ url }) => true,
-  new workbox.strategies.StaleWhileRevalidate({
-    cacheName: CACHE,
-  })
+// Background sync
+// use the Plugin that will automatically Queue up failed requests and retry them when future sync events are fired.
+const bgSyncPlugin = new workbox.backgroundSync.BackgroundSyncPlugin(
+  'myQueueName',
+  {
+    maxRetentionTime: 24 * 60, // Retry for max of 24 Hours (specified in minutes)
+  }
 );
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response; // Return cached version
-      }
-      return fetch(event.request)
-        .then((response) => {
-          // Check if we received a valid response
-          if (
-            !response ||
-            response.status !== 200 ||
-            response.type !== 'basic'
-          ) {
-            return response;
-          }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          caches.open(CACHE).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-
-          return response;
-        })
-        .catch(() => {
-          // If the network request fails, return the offline page
-          if (event.request.mode === 'navigate') {
-            return caches.match('/offline.html');
-          }
-        });
-    })
-  );
-});
+workbox.routing.registerRoute(
+  /\/api\/.*\/*.json/,
+  new workbox.strategies.NetworkOnly({
+    plugins: [bgSyncPlugin],
+  }),
+  'POST'
+);

@@ -2,86 +2,98 @@
 <html lang="en-US">
 
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width" />
-  <title>Cycle Tracker</title>
-  <meta name="theme-color" content="#eeffee" />
-  <meta name="description" content="Securely and confidentially track your menstrual cycle" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black" />
-  <meta name="apple-mobile-web-app-title" content="CyTck" />
-  <link rel="apple-touch-icon" href="icons/wheel.svg" />
-  <link rel="stylesheet" href="style.css" />
-  <link rel="manifest" href="cycletracker.json" />
-  <link rel="icon" href="icons/circle.svg" />
-  <style>
-    .nav-link {
-      color: #4CAF50;
-      text-decoration: none;
-      margin-left: 1rem;
-    }
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Cycle Tracker</title>
+    <meta name="theme-color" content="#eeffee" />
+    <meta name="description" content="Securely and confidentially track your menstrual cycle" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="CyTck" />
+    <link rel="apple-touch-icon" href="icons/wheel.svg" />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="cycletracker.json" />
+    <link rel="icon" href="icons/circle.svg" />
+    <style>
+        .nav-link {
+            color: #4CAF50;
+            text-decoration: none;
+            margin-left: 1rem;
+        }
 
-    .nav-link:hover {
-      text-decoration: underline;
-    }
+        .nav-link:hover {
+            text-decoration: underline;
+        }
 
-    nav {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
+        nav {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
 
-    .store-link {
-      background-color: #4CAF50;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      text-decoration: none;
-      transition: background-color 0.2s;
-    }
+        .store-link {
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background-color 0.2s;
+        }
 
-    .store-link:hover {
-      background-color: #45a049;
-      text-decoration: none;
-    }
-  </style>
+        .store-link:hover {
+            background-color: #45a049;
+            text-decoration: none;
+        }
+    </style>
 </head>
 
 <body>
-  <header>
-    <h1>Period tracker.</h1>
-    <nav>
-      <a href="about.html" class="nav-link">About Us</a>
-      <a href="store.html" class="store-link">Premium Store</a>
-    </nav>
-  </header>
-  <form id="new-period">
-    <fieldset>
-      <legend>Enter your period start and end date</legend>
-      <p>
-        <label for="start-date">Start date</label>
-        <input type="date" id="start-date" required />
-      </p>
-      <p>
-        <label for="end-date">End date</label>
-        <input type="date" id="end-date" required />
-      </p>
-    </fieldset>
-    <p>
-      <button type="submit">Add Period</button>
-    </p>
-  </form>
-  <section id="past-periods"></section>
-  <script src="app.js" defer></script>
-  <script src="update-handler.js" defer></script>
-  <script src="share-handler.js" defer></script>
-  <script>
-    if ("serviceWorker" in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js');
-      });
-    }
-  </script>
+    <header>
+        <h1>Period tracker.</h1>
+        <nav>
+            <a href="about.html" class="nav-link">About Us</a>
+            <a href="store.html" class="store-link">Premium Store</a>
+        </nav>
+    </header>
+    <form id="new-period">
+        <fieldset>
+            <legend>Enter your period start and end date</legend>
+            <p>
+                <label for="start-date">Start date</label>
+                <input type="date" id="start-date" required />
+            </p>
+            <p>
+                <label for="end-date">End date</label>
+                <input type="date" id="end-date" required />
+            </p>
+        </fieldset>
+        <p>
+            <button type="submit">Add Period</button>
+        </p>
+    </form>
+    <section id="past-periods"></section>
+    <script src="app.js" defer></script>
+    <script src="share-handler.js" defer></script>
+    <script type="module">
+        import { Workbox } from 'https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-window.prod.mjs';
+        const wb = new Workbox('/sw.js');
+
+        // Listen for the waiting event
+        wb.addEventListener('waiting', () => {
+            // Prompt the user to update
+            const updatePrompt = confirm('A new version is available. Would you like to update?');
+            if (updatePrompt) {
+                wb.addEventListener('controlling', () => {
+                    window.location.reload();
+                });
+
+                // Send a message to the waiting service worker to skip waiting
+                wb.messageSkipWaiting();
+            }
+        });
+
+        wb.register();
+    </script>
 </body>
 
 </html>
