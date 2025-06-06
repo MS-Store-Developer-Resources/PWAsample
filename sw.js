@@ -35,19 +35,7 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
 });
-// Notify clients about updates
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    self.clients.matchAll().then((clients) => {
-      clients.forEach((client) => {
-        client.postMessage({
-          type: 'UPDATE_AVAILABLE',
-          message: 'A new version of Cycle Tracker is available!',
-        });
-      });
-    })
-  );
-});
+
 // 1. Navigation requests (HTML pages)
 workbox.routing.registerRoute(
   ({ request }) => request.mode === 'navigate',
