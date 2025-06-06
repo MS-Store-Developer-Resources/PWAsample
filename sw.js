@@ -12,7 +12,7 @@ workbox.core.clientsClaim();
 workbox.precaching.precacheAndRoute(
   [
     { url: './', revision: '1' },
-    { url: './index.html', revision: '1' },
+    { url: './index.html', revision: '1.0.1' },
     { url: './style.css', revision: '1' },
     { url: './app.js', revision: '1' },
     { url: './offline.html', revision: '1' },
