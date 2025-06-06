@@ -2,7 +2,7 @@ importScripts(
   'https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js'
 );
 
-// Immediately activate new service worker
+// Immediately activate new service worker2
 self.skipWaiting();
 
 workbox.core.clientsClaim();
@@ -40,19 +40,6 @@ self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
-});
-// Notify clients about updates
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    self.clients.matchAll().then((clients) => {
-      clients.forEach((client) => {
-        client.postMessage({
-          type: 'UPDATE_AVAILABLE',
-          message: 'A new version of Cycle Tracker is available!',
-        });
-      });
-    })
-  );
 });
 
 // 1. Navigation requests (HTML pages)
