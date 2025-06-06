@@ -1,146 +1,89 @@
-// This is the service worker with the combined offline experience (Offline page + Offline copy of pages)
-
-const CACHE = 'cycletracker-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  './about.html',
-  './offline.html',
-  './style.css',
-  './app.js',
-  './update-handler.js',
-  './share-handler.js',
-  './cycletracker.json',
-  './icons/circle.svg',
-  './icons/tire.svg',
-  './icons/wheel.svg',
-  './favicon.ico',
-  './screenshots/main.png',
-  './screenshots/main-mobile.png',
-  './screenshots/about.png',
-  './screenshots/about-mobile.png'
-];
-
 importScripts(
-  'https://storage.googleapis.com/workbox-cdn/releases/5.1.2/workbox-sw.js'
+  'https://storage.googleapis.com/workbox-cdn/releases/6.4.1/workbox-sw.js'
 );
-
-const offlineFallbackPage = 'offline.html';
-
-// Handle update notifications
+// Immediately activate new service workere
+self.skipWaiting();
+workbox.core.clientsClaim();
+// we are not using bundler here, so we need to modify the revision each time we have an update.
+// https://developer.chrome.com/docs/workbox/modules/workbox-precaching?hl=en
+workbox.precaching.precacheAndRoute(
+  [
+    { url: './', revision: '1' },
+    { url: './index.html', revision: '1' },
+    { url: './style.css', revision: '1' },
+    { url: './app.js', revision: '1' },
+    { url: './offline.html', revision: '1' },
+    { url: './share-handler.js', revision: '1' },
+    { url: './icons/circle.svg', revision: '1' },
+    { url: './icons/tire.svg', revision: '1' },
+    { url: './icons/wheel.svg', revision: '1' },
+    { url: './favicon.ico', revision: '1' },
+    { url: './screenshots/main.png', revision: '1' },
+    { url: './screenshots/main-mobile.png', revision: '1' },
+    { url: './screenshots/about.png', revision: '1' },
+    { url: './screenshots/about-mobile.png', revision: '1' },
+    // Add more files as needed
+  ],
+  {
+    // Ignore all URL parameters.
+    ignoreURLParametersMatching: [/.*/],
+  }
+);
+// Listen for SKIP_WAITING message from client
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
   }
 });
-
-// Enable navigation preload if supported
-if (workbox.navigationPreload.isSupported()) {
-  workbox.navigationPreload.enable();
-}
-
-// Cache the offline page during install
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE).then((cache) => {
-      return cache.addAll(ASSETS);
-    })
-  );
-});
-
 // Notify clients about updates
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    Promise.all([
-      // Clean up old caches
-      caches.keys().then((keys) => {
-        return Promise.all(
-          keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))
-        );
-      }),
-      // Notify all clients about the update
-      self.clients.matchAll().then((clients) => {
-        clients.forEach((client) => {
-          client.postMessage({
-            type: 'UPDATE_AVAILABLE',
-            message: 'A new version of Cycle Tracker is available!'
-          });
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: 'UPDATE_AVAILABLE',
+          message: 'A new version of Cycle Tracker is available!',
         });
-      })
-    ])
+      });
+    })
   );
 });
-
-// Handle navigation requests with NetworkFirst strategy
+// 1. Navigation requests (HTML pages)
 workbox.routing.registerRoute(
   ({ request }) => request.mode === 'navigate',
   new workbox.strategies.NetworkFirst({
-    cacheName: CACHE,
-    plugins: [
-      new workbox.expiration.ExpirationPlugin({
-        maxEntries: 50,
-      }),
-    ],
+    cacheName: 'html-assets', // Use a unique cache name
+    plugins: [new workbox.expiration.ExpirationPlugin({ maxEntries: 50 })],
   })
 );
-
-// Handle static assets with CacheFirst strategy
+// 2. Static assets (scripts, styles, images)
 workbox.routing.registerRoute(
   ({ request }) =>
     request.destination === 'style' ||
     request.destination === 'script' ||
     request.destination === 'image',
   new workbox.strategies.CacheFirst({
-    cacheName: CACHE,
+    cacheName: 'static-assets', // Use a unique cache name
     plugins: [
       new workbox.expiration.ExpirationPlugin({
         maxEntries: 60,
-        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 Days
+        maxAgeSeconds: 30 * 24 * 60 * 60,
       }),
     ],
   })
 );
-
-// Handle other requests with StaleWhileRevalidate strategy
-workbox.routing.registerRoute(
-  ({ url }) => true,
-  new workbox.strategies.StaleWhileRevalidate({
-    cacheName: CACHE,
-  })
+// Background sync
+// use the Plugin that will automatically Queue up failed requests and retry them when future sync events are fired.
+const bgSyncPlugin = new workbox.backgroundSync.BackgroundSyncPlugin(
+  'myQueueName',
+  {
+    maxRetentionTime: 24 * 60, // Retry for max of 24 Hours (specified in minutes)
+  }
 );
-
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => {
-      if (response) {
-        return response; // Return cached version
-      }
-      return fetch(event.request)
-        .then((response) => {
-          // Check if we received a valid response
-          if (
-            !response ||
-            response.status !== 200 ||
-            response.type !== 'basic'
-          ) {
-            return response;
-          }
-
-          // Clone the response
-          const responseToCache = response.clone();
-
-          caches.open(CACHE).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-
-          return response;
-        })
-        .catch(() => {
-          // If the network request fails, return the offline page
-          if (event.request.mode === 'navigate') {
-            return caches.match('/offline.html');
-          }
-        });
-    })
-  );
-});
+workbox.routing.registerRoute(
+  /\/api\/.*\/*.json/,
+  new workbox.strategies.NetworkOnly({
+    plugins: [bgSyncPlugin],
+  }),
+  'POST'
+);
